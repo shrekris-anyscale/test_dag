@@ -86,8 +86,8 @@ with InputNode() as inp:
 
 serve_dag = DAGDriver.bind(order, http_adapter=json_resolver)
 
-ray.init()
-handle = serve.run(serve_dag)
+# ray.init()
+# handle = serve.run(serve_dag)
 
 # import requests
 # print(requests.post("http://localhost:8000/", json=["ADD", 1]).text)

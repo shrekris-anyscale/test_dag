@@ -17,8 +17,9 @@ class Operation(str, Enum):
 @serve.deployment
 class Router:
 
-    def __init__(self):
-        pass
+    def __init__(self, multiplier: RayHandleLike, adder: RayHandleLike):
+        self.adder = adder
+        self.multiplier = multiplier
     
     def route(self, op: Operation, input: int) -> int:
         if op == Operation.ADDITION:
@@ -79,7 +80,7 @@ with InputNode() as inp:
 
     multiplier = Multiplier.bind(ORIGINAL_FACTOR)
     adder = Adder.bind(ORIGINAL_INCREMENT)
-    router = Router.bind()
+    router = Router.bind(multiplier, adder)
     amount = router.route.bind(operation, amount_input)
     order = create_order.bind(amount)
 

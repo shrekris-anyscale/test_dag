@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import List, Dict, TypeVar
 
@@ -31,6 +32,13 @@ class Router:
 @serve.deployment(
     user_config={
         "factor": 3,
+    },
+    ray_actor_options={
+        "runtime_env": {
+            "env_vars": {
+                "override_factor": "-2",
+            }
+        }
     }
 )
 class Multiplier:
@@ -42,12 +50,21 @@ class Multiplier:
         self.factor = config.get("factor", -1)
     
     def multiply(self, input_factor: int) -> int:
+        if os.getenv("override_factor") is not None:
+            return input_factor * int(os.getenv("override_factor"))
         return input_factor * self.factor
 
 
 @serve.deployment(
     user_config={
         "increment": 2,
+    },
+    ray_actor_options={
+        "runtime_env": {
+            "env_vars": {
+                "override_increment": "-2",
+            }
+        }
     }
 )
 class Adder:
@@ -59,6 +76,8 @@ class Adder:
         self.increment = config.get("increment", -1)
     
     def add(self, input: int) -> int:
+        if os.getenv("override_increment") is not None:
+            return input + int(os.getenv("override_increment"))
         return input + self.increment
 
 
@@ -85,11 +104,14 @@ with InputNode() as inp:
     order = create_order.bind(amount)
 
 serve_dag = DAGDriver.bind(order, http_adapter=json_resolver)
+app = serve.api.build(serve_dag)
 
-# ray.init()
-# handle = serve.run(serve_dag)
+ray.init(address="auto")
+serve.start(detached=True, _override_controller_namespace="serve")
+handle = serve.run(serve_dag)
+# handle = serve.run(app)
 
 # import requests
 # print(requests.post("http://localhost:8000/", json=["ADD", 1]).text)
 
-# print(ray.get(handle.predict.remote(["ADD", 1])))
+print(ray.get(handle.predict.remote(["ADD", 1])))
